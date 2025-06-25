@@ -9,6 +9,7 @@ import (
 	"go.uber.org/fx"
 )
 
+// AuthModule provides the fx module for authentication dependencies.
 var AuthModule = fx.Module("auth",
 	fx.Provide(
 		func(cfg *config.AppConfig) *gocloak.GoCloak {

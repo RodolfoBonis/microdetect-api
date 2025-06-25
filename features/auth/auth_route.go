@@ -28,9 +28,9 @@ func LoginHandler(authUc usecases.AuthUseCase) gin.HandlerFunc {
 	}
 }
 
-func AuthRoutes(route *gin.RouterGroup, authUC usecases.AuthUseCase, protectFactory func(handler gin.HandlerFunc, role string) gin.HandlerFunc) {
-	authRoute := route.Group("/auth")
-	authRoute.POST("/login", LoginHandler(authUC))
-	authRoute.POST("/logout", protectFactory(authUC.Logout, "user"))
-	authRoute.POST("/refresh", protectFactory(authUC.RefreshAuthToken, "user"))
+// Routes registers authentication routes for the application.
+func Routes(route *gin.RouterGroup, authUC usecases.AuthUseCase, protectFactory func(handler gin.HandlerFunc, role string) gin.HandlerFunc) {
+	route.POST("/login", LoginHandler(authUC))
+	route.POST("/logout", protectFactory(authUC.Logout, "user"))
+	route.POST("/refresh", protectFactory(authUC.RefreshAuthToken, "user"))
 }

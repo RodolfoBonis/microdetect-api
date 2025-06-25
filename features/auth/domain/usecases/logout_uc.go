@@ -32,7 +32,7 @@ func (uc *authUseCaseImpl) Logout(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if len(authHeader) < 1 {
 		err := errors.NewAppError(entities.ErrInvalidToken, "Missing token", nil, nil)
-		httpError := err.ToHttpError()
+		httpError := err.ToHTTPError()
 		uc.Logger.LogError(ctx, "Logout failed: missing token", err)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
@@ -48,7 +48,7 @@ func (uc *authUseCaseImpl) Logout(c *gin.Context) {
 	)
 	if err != nil {
 		currentError := errors.NewAppError(entities.ErrUsecase, err.Error(), nil, err)
-		httpError := currentError.ToHttpError()
+		httpError := currentError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Logout failed", currentError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()

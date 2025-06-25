@@ -40,7 +40,7 @@ func (uc *authUseCaseImpl) ValidateLogin(c *gin.Context) {
 	err := c.BindJSON(&loginData)
 	if err != nil {
 		internalError := errors.NewAppError(coreEntities.ErrUsecase, err.Error(), nil, err)
-		httpError := internalError.ToHttpError()
+		httpError := internalError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Invalid login payload", internalError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		return
@@ -55,7 +55,7 @@ func (uc *authUseCaseImpl) ValidateLogin(c *gin.Context) {
 	)
 	if err != nil {
 		internalError := errors.NewAppError(coreEntities.ErrInvalidCredentials, "Invalid credentials", nil, err)
-		httpError := internalError.ToHttpError()
+		httpError := internalError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Login failed: invalid credentials", internalError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		return

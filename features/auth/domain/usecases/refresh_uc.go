@@ -33,7 +33,7 @@ func (uc *authUseCaseImpl) RefreshAuthToken(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if len(authHeader) < 1 {
 		err := errors.NewAppError(coreEntities.ErrInvalidToken, "Invalid token", nil, nil)
-		httpError := err.ToHttpError()
+		httpError := err.ToHTTPError()
 		uc.Logger.LogError(ctx, "Refresh failed: missing token", err)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
@@ -49,7 +49,7 @@ func (uc *authUseCaseImpl) RefreshAuthToken(c *gin.Context) {
 	)
 	if err != nil {
 		currentError := errors.UsecaseError(err.Error())
-		httpError := currentError.ToHttpError()
+		httpError := currentError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Refresh failed", currentError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()

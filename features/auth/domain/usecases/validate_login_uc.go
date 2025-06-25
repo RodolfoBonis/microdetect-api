@@ -43,7 +43,7 @@ func (uc *authUseCaseImpl) ValidateToken(c *gin.Context) {
 	)
 	if err != nil {
 		currentError := errors.NewAppError(entities.ErrUsecase, err.Error(), nil, err)
-		httpError := currentError.ToHttpError()
+		httpError := currentError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Token validation failed", currentError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
@@ -52,7 +52,7 @@ func (uc *authUseCaseImpl) ValidateToken(c *gin.Context) {
 	isTokenValid := *rptResult.Active
 	if !isTokenValid {
 		currentError := errors.NewAppError(entities.ErrInvalidToken, "Token is invalid", nil, nil)
-		httpError := currentError.ToHttpError()
+		httpError := currentError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Token is invalid", currentError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
