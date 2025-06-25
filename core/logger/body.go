@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
+	"strings"
 )
 
 func HandleRequestBody(req *http.Request) string {
@@ -24,7 +25,7 @@ func HandleResponseBody(rw gin.ResponseWriter) *BodyLogWriter {
 }
 
 func FormatRequestAndResponse(rw gin.ResponseWriter, req *http.Request, responseBody string, requestId string, requestBody string) string {
-	if req.URL.String() == "/metrics" {
+	if req.URL.String() == "/metrics" || strings.Contains(req.URL.String(), "/docs") {
 		return ""
 	}
 
