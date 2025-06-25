@@ -1,8 +1,8 @@
 package entities
 
 import (
-	"github.com/google/uuid"
 	"github.com/RodolfoBonis/microdetect-api/core/types"
+	"github.com/google/uuid"
 )
 
 type JWTClaim struct {

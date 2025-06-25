@@ -21,7 +21,52 @@ permissions:
   pull-requests: write
 
 jobs:
+  lint_go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Instalar dependências de lint
+        run: |
+          go install golang.org/x/lint/golint@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install golang.org/x/tools/cmd/goimports@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+
+      - name: Rodar lint.sh e salvar saída
+        id: lint
+        run: |
+          chmod +x .config/scripts/lint.sh
+          export PATH=$PATH:$(go env GOPATH)/bin
+          set +e
+          ./.config/scripts/lint.sh > lint_output.txt 2>&1
+          echo "status=$?" >> $GITHUB_OUTPUT
+          set -e
+
+      - name: Instalar dependências Python para comentário
+        if: ${{ github.event_name == 'pull_request' && steps.lint.outputs.status != '0' }}
+        run: pip install openai PyGithub
+
+      - name: Comentar problemas de lint no PR
+        if: ${{ github.event_name == 'pull_request' && steps.lint.outputs.status != '0' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          REPO_NAME: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python .config/scripts/generate_lint_report.py
+
   check_vulnerabilities:
+    needs: [lint_go]
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -97,12 +142,12 @@ jobs:
         run: exit 1
 
   notify:
-    needs: [check_vulnerabilities]
+    needs: [lint_go, check_vulnerabilities]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Send Success Message via Telegram
-        if: ${{ needs.check_vulnerabilities.result == 'success' }}
+        if: ${{ needs.lint_go.result == 'success' && needs.check_vulnerabilities.result == 'success' }}
         uses: akeylimepie/telegram-action@main
         with:
           token: ${{ secrets.BOTTOKEN }}
@@ -121,7 +166,7 @@ jobs:
             ✅ CI Status: Success
 
       - name: Send Error Message via Telegram
-        if: ${{ needs.check_vulnerabilities.result != 'success' }}
+        if: ${{ needs.lint_go.result != 'success' || needs.check_vulnerabilities.result != 'success' }}
         uses: akeylimepie/telegram-action@main
         with:
           token: ${{ secrets.BOTTOKEN }}
