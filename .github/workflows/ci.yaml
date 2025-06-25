@@ -166,11 +166,11 @@ jobs:
           message: |
             🚀 *CI Successful\!*
             *Details:*
-            \- Repository: ${{ github.repository }}
-            \- Triggered by: ${{ github.actor }}
-            \- Commit: ${{ github.sha }}
-            \- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} \\-\\> {1}', github.head_ref, github.base_ref) || github.ref_name }}
-            \- PR URL: ${{ github.event_name == 'pull_request' && format('https:\/\/github.com\/{0}\/pull\/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
+            \\- Repository: ${{ github.repository }}
+            \\- Triggered by: ${{ github.actor }}
+            \\- Commit: ${{ github.sha }}
+            \\- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} \\-\\> {1}', github.head_ref, github.base_ref) || github.ref_name }}
+            \\- PR URL: ${{ github.event_name == 'pull_request' && format('https:\/\/github.com\/{0}\/pull\/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
             ✅ CI Status: Success
 
       - name: Send Error Message via Telegram
@@ -184,12 +184,12 @@ jobs:
           message: |
             ❌ *CI Failed\!*
             *Error Details:*
-            \- Repository: ${{ github.repository }}
-            \- Triggered by: ${{ github.actor }}
-            \- Commit: ${{ github.sha }}
-            \- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} \\-\\> {1}', github.head_ref, github.base_ref) || github.ref_name }}
-            \- PR URL: ${{ github.event_name == 'pull_request' && format('https:\/\/github.com\/{0}\/pull\/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
+            \\- Repository: ${{ github.repository }}
+            \\- Triggered by: ${{ github.actor }}
+            \\- Commit: ${{ github.sha }}
+            \\- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} \\-\\> {1}', github.head_ref, github.base_ref) || github.ref_name }}
+            \\- PR URL: ${{ github.event_name == 'pull_request' && format('https:\/\/github.com\/{0}\/pull\/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
             🔍 *Debug Information:*
-            \- CI Status: Failure
-            \- Commit URL: https:\/\/github.com\/${{ github.repository }}\/commit\/${{ github.sha }}
+            \\- CI Status: Failure
+            \\- Commit URL: https:\/\/github.com\/${{ github.repository }}\/commit\/${{ github.sha }}
             ⚠️ [Check GitHub Actions Logs](https:\/\/github.com\/${{ github.repository }}\/actions\/runs\/${{ github.run_id }})
