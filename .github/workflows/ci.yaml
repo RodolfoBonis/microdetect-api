@@ -162,15 +162,9 @@ jobs:
           bot_token: ${{ secrets.BOTTOKEN }}
           chat_id: ${{ secrets.CHAT_ID }}
           message_thread_id: ${{ secrets.THREAD_ID }}
+          parse_mode: 'MarkdownV2'
           message: |
-            🚀 *CI Successful!*
-            *Details:*
-            - Repository: ${{ github.repository }}
-            - Triggered by: ${{ github.actor }}
-            - Commit: ${{ github.sha }}
-            - Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} - {1}', github.head_ref, github.base_ref) || github.ref_name }}
-            - PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
-            ✅ CI Status: Success
+            🚀 *CI Successful\!*\n*Details:*\n\- Repository: ${{ github.repository }}\n\- Triggered by: ${{ github.actor }}\n\- Commit: ${{ github.sha }}\n\- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} \-> {1}', github.head_ref, github.base_ref) || github.ref_name }}\n\- PR URL: ${{ github.event_name == 'pull_request' && format('https:\/\/github.com\/{0}\/pull\/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}\n✅ CI Status: Success
 
       - name: Send Error Message via Telegram
         if: ${{ needs.lint_go.result != 'success' || needs.check_vulnerabilities.result != 'success' }}
@@ -179,15 +173,6 @@ jobs:
           bot_token: ${{ secrets.BOTTOKEN }}
           chat_id: ${{ secrets.CHAT_ID }}
           message_thread_id: ${{ secrets.THREAD_ID }}
+          parse_mode: 'MarkdownV2'
           message: |
-            ❌ *CI Failed!*
-            *Error Details:*
-            - Repository: ${{ github.repository }}
-            - Triggered by: ${{ github.actor }}
-            - Commit: ${{ github.sha }}
-            - Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} - {1}', github.head_ref, github.base_ref) || github.ref_name }}
-            - PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
-            🔍 *Debug Information:*
-            - CI Status: Failure
-            - Commit URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
-            ⚠️ [Check GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ❌ *CI Failed\!*\n*Error Details:*\n\- Repository: ${{ github.repository }}\n\- Triggered by: ${{ github.actor }}\n\- Commit: ${{ github.sha }}\n\- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} \-> {1}', github.head_ref, github.base_ref) || github.ref_name }}\n\- PR URL: ${{ github.event_name == 'pull_request' && format('https:\/\/github.com\/{0}\/pull\/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}\n🔍 *Debug Information:*\n\- CI Status: Failure\n\- Commit URL: https:\/\/github.com\/${{ github.repository }}\/commit\/${{ github.sha }}\n⚠️ [Check GitHub Actions Logs](https:\/\/github.com\/${{ github.repository }}\/actions\/runs\/${{ github.run_id }})
