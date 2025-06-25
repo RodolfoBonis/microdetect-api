@@ -1,41 +1,44 @@
 package usecases
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/RodolfoBonis/microdetect-api/core/errors"
-	"github.com/RodolfoBonis/microdetect-api/core/logger"
 	"net/http"
 	"strings"
+
+	"github.com/RodolfoBonis/microdetect-api/core/entities"
+	"github.com/RodolfoBonis/microdetect-api/core/errors"
+	"github.com/RodolfoBonis/microdetect-api/core/logger"
+	"github.com/gin-gonic/gin"
 )
 
-// Logout godoc
-// @Summary Logout
+// Logout invalidates the user's refresh token and ends the session.
+// @Summary User Logout
 // @Schemes
-// @Description Logout the User
+// @Description Invalidate the refresh token and logout the user
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Success 200 {object} bool
+// @Param Authorization header string true "Bearer refresh token"
+// @Success 200 {object} bool "Logout successful"
 // @Failure 400 {object} errors.HttpError
 // @Failure 401 {object} errors.HttpError
 // @Failure 403 {object} errors.HttpError
 // @Failure 409 {object} errors.HttpError
 // @Failure 500 {object} errors.HttpError
 // @Router /auth/logout [post]
-func (uc *AuthUseCase) Logout(c *gin.Context) {
+// @Example request {"Authorization": "Bearer <refresh-token>"}
+// @Example response true
+func (uc *authUseCaseImpl) Logout(c *gin.Context) {
+	ctx := c.Request.Context()
 	authHeader := c.GetHeader("Authorization")
-
 	if len(authHeader) < 1 {
-		err := errors.InvalidTokenError()
+		err := errors.NewAppError(entities.ErrInvalidToken, "Missing token", nil, nil)
 		httpError := err.ToHttpError()
-		logger.Log.Error(err.Message, err.ToMap())
+		uc.Logger.LogError(ctx, "Logout failed: missing token", err)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
 		return
 	}
-
 	refreshToken := strings.Split(authHeader, " ")[1]
-
 	err := uc.KeycloakClient.Logout(
 		c,
 		uc.KeycloakAccessData.ClientID,
@@ -43,15 +46,16 @@ func (uc *AuthUseCase) Logout(c *gin.Context) {
 		uc.KeycloakAccessData.Realm,
 		refreshToken,
 	)
-
 	if err != nil {
-		currentError := errors.UsecaseError(err.Error())
+		currentError := errors.NewAppError(entities.ErrUsecase, err.Error(), nil, err)
 		httpError := currentError.ToHttpError()
-		logger.Log.Error(currentError.Message, currentError.ToMap())
+		uc.Logger.LogError(ctx, "Logout failed", currentError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
 		return
 	}
-
+	uc.Logger.Info(ctx, "Logout successful", logger.Fields{
+		"ip": c.ClientIP(),
+	})
 	c.JSON(http.StatusOK, true)
 }

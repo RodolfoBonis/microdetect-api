@@ -1,42 +1,45 @@
 package usecases
 
 import (
-	"github.com/gin-gonic/gin"
+	"net/http"
+	"strings"
+
+	coreEntities "github.com/RodolfoBonis/microdetect-api/core/entities"
 	"github.com/RodolfoBonis/microdetect-api/core/errors"
 	"github.com/RodolfoBonis/microdetect-api/core/logger"
 	"github.com/RodolfoBonis/microdetect-api/features/auth/domain/entities"
-	"net/http"
-	"strings"
+	"github.com/gin-gonic/gin"
 )
 
-// RefreshAuthToken godoc
+// RefreshAuthToken renews the user's authentication tokens.
 // @Summary Refresh Login Access Token
 // @Schemes
-// @Description Refresh User Token
+// @Description Refresh the user's access and refresh tokens
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Success 200 {object} entities.LoginResponseEntity
+// @Param Authorization header string true "Bearer refresh token"
+// @Success 200 {object} entities.LoginResponseEntity "Tokens refreshed"
 // @Failure 400 {object} errors.HttpError
 // @Failure 401 {object} errors.HttpError
 // @Failure 403 {object} errors.HttpError
 // @Failure 409 {object} errors.HttpError
 // @Failure 500 {object} errors.HttpError
 // @Router /auth/refresh [post]
-func (uc *AuthUseCase) RefreshAuthToken(c *gin.Context) {
+// @Example request {"Authorization": "Bearer <refresh-token>"}
+// @Example response {"accessToken": "jwt-token", "refreshToken": "refresh-token", "expiresIn": 3600}
+func (uc *authUseCaseImpl) RefreshAuthToken(c *gin.Context) {
+	ctx := c.Request.Context()
 	authHeader := c.GetHeader("Authorization")
-
 	if len(authHeader) < 1 {
-		err := errors.InvalidTokenError()
+		err := errors.NewAppError(coreEntities.ErrInvalidToken, "Invalid token", nil, nil)
 		httpError := err.ToHttpError()
-		logger.Log.Error(err.Message, err.ToMap())
+		uc.Logger.LogError(ctx, "Refresh failed: missing token", err)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
 		return
 	}
-
 	refreshToken := strings.Split(authHeader, " ")[1]
-
 	token, err := uc.KeycloakClient.RefreshToken(
 		c,
 		refreshToken,
@@ -44,16 +47,17 @@ func (uc *AuthUseCase) RefreshAuthToken(c *gin.Context) {
 		uc.KeycloakAccessData.ClientSecret,
 		uc.KeycloakAccessData.Realm,
 	)
-
 	if err != nil {
 		currentError := errors.UsecaseError(err.Error())
 		httpError := currentError.ToHttpError()
-		logger.Log.Error(currentError.Message, currentError.ToMap())
+		uc.Logger.LogError(ctx, "Refresh failed", currentError)
 		c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 		c.Abort()
 		return
 	}
-
+	uc.Logger.Info(ctx, "Token refreshed successfully", logger.Fields{
+		"ip": c.ClientIP(),
+	})
 	c.JSON(http.StatusOK, entities.LoginResponseEntity{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
