@@ -157,7 +157,7 @@ jobs:
     steps:
       - name: Send Success Message via Telegram
         if: ${{ needs.lint_go.result == 'success' && needs.check_vulnerabilities.result == 'success' }}
-        uses: cbrgm/telegram-github-action@latest
+        uses: cbrgm/telegram-github-action@v1.3.5
         with:
           token: ${{ secrets.BOTTOKEN }}
           to: ${{ secrets.CHAT_ID }}
@@ -175,7 +175,7 @@ jobs:
 
       - name: Send Error Message via Telegram
         if: ${{ needs.lint_go.result != 'success' || needs.check_vulnerabilities.result != 'success' }}
-        uses: cbrgm/telegram-github-action@latest
+        uses: cbrgm/telegram-github-action@v1.3.5
         with:
           token: ${{ secrets.BOTTOKEN }}
           to: ${{ secrets.CHAT_ID }}
