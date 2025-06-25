@@ -1,9 +1,8 @@
 package entities
 
-// GPU represents GPU information.
+// GPU representa a entidade de placa gráfica (Graphics Processing Unit).
 // @Description GPU data
 // @Example {"Model": "AMD Radeon Pro", "Memory": "4GB", "Available": true, "Cores": 8}
-
 type GPU struct {
 	Model     string
 	Memory    string
