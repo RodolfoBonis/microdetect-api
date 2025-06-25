@@ -14,6 +14,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// InitializeRoutes sets up all application routes.
 func InitializeRoutes(
 	router *gin.Engine,
 	systemUc system_uc.SystemUseCase,
@@ -28,7 +29,7 @@ func InitializeRoutes(
 	root.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	health.HealthRoutes(root, logger)
-	auth.AuthRoutes(root, authUc, protectFactory)
-	system.SystemRoutes(root, systemUc)
+	health.Routes(root, logger)
+	auth.Routes(root, authUc, protectFactory)
+	system.Routes(root, systemUc)
 }
