@@ -39,7 +39,7 @@ func (uc *systemUseCaseImpl) GetSystemStatus(c *gin.Context) {
 
 	cpu, appError := uc.Service.GetCPUInfo()
 	if appError != nil {
-		httpError := appError.ToHttpError()
+		httpError := appError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Failed to get CPU info", appError)
 		c.JSON(httpError.StatusCode, httpError.ToMap())
 		return
@@ -47,7 +47,7 @@ func (uc *systemUseCaseImpl) GetSystemStatus(c *gin.Context) {
 
 	memory, appError := uc.Service.GetMemoryInfo()
 	if appError != nil {
-		httpError := appError.ToHttpError()
+		httpError := appError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Failed to get memory info", appError)
 		c.JSON(httpError.StatusCode, httpError.ToMap())
 		return
@@ -55,7 +55,7 @@ func (uc *systemUseCaseImpl) GetSystemStatus(c *gin.Context) {
 
 	storage, appError := uc.Service.GetStorageInfo()
 	if appError != nil {
-		httpError := appError.ToHttpError()
+		httpError := appError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Failed to get storage info", appError)
 		c.JSON(httpError.StatusCode, httpError.ToMap())
 		return
@@ -63,7 +63,7 @@ func (uc *systemUseCaseImpl) GetSystemStatus(c *gin.Context) {
 
 	hostInfo, appError := uc.Service.GetHostInfo()
 	if appError != nil {
-		httpError := appError.ToHttpError()
+		httpError := appError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Failed to get host info", appError)
 		c.JSON(httpError.StatusCode, httpError.ToMap())
 		return
@@ -71,7 +71,7 @@ func (uc *systemUseCaseImpl) GetSystemStatus(c *gin.Context) {
 
 	gpuInfo, appError := uc.Service.GetGPUInfo()
 	if appError != nil {
-		httpError := appError.ToHttpError()
+		httpError := appError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Failed to get GPU info", appError)
 		c.JSON(httpError.StatusCode, httpError.ToMap())
 		return
@@ -79,7 +79,7 @@ func (uc *systemUseCaseImpl) GetSystemStatus(c *gin.Context) {
 
 	serverInfo, appError := uc.Service.GetServerInfo()
 	if appError != nil {
-		httpError := appError.ToHttpError()
+		httpError := appError.ToHTTPError()
 		uc.Logger.LogError(ctx, "Failed to get server info", appError)
 		c.JSON(httpError.StatusCode, httpError.ToMap())
 		return

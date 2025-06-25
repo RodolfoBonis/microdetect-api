@@ -11,14 +11,17 @@ import (
 	"github.com/mindprince/gonvml"
 )
 
+// NvidiaDetector provides GPU detection for NVIDIA GPUs.
 type NvidiaDetector struct {
 	logger logger.Logger
 }
 
+// NewNvidiaDetector creates a new NvidiaDetector instance.
 func NewNvidiaDetector(logger logger.Logger) Detector {
 	return &NvidiaDetector{logger: logger}
 }
 
+// GetGPUInfo retrieves GPU information for NVIDIA GPUs.
 func (d *NvidiaDetector) GetGPUInfo() (entities.GPU, *errors.AppError) {
 	if err := gonvml.Initialize(); err != nil {
 		appErr := errors.NewAppError(coreEntities.ErrService, err.Error(), map[string]interface{}{"step": "NVML Initialize"}, err)

@@ -9,6 +9,7 @@ import (
 	"github.com/RodolfoBonis/microdetect-api/features/system/domain/entities"
 )
 
+// Service provides GPU service operations.
 type Service interface {
 	GetGPUInfo() (entities.GPU, *errors.AppError)
 }
@@ -17,6 +18,7 @@ type service struct {
 	detectors []Detector
 }
 
+// NewService creates a new Service instance.
 func NewService(logger logger.Logger) Service {
 	var detectors []Detector
 

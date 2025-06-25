@@ -13,14 +13,17 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
+// MacOSDetector provides GPU detection for macOS systems.
 type MacOSDetector struct {
 	logger logger.Logger
 }
 
+// NewMacOSDetector creates a new MacOSDetector instance.
 func NewMacOSDetector(logger logger.Logger) Detector {
 	return &MacOSDetector{logger: logger}
 }
 
+// GetGPUInfo retrieves GPU information on macOS systems.
 func (d *MacOSDetector) GetGPUInfo() (entities.GPU, *errors.AppError) {
 	d.logger.Info(context.Background(), "Entrou no MacOSDetector.GetGPUInfo")
 	cmd := exec.Command("system_profiler", "SPDisplaysDataType", "-json")

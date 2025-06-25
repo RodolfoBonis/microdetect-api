@@ -10,14 +10,17 @@ import (
 	"github.com/RodolfoBonis/microdetect-api/features/system/domain/entities"
 )
 
+// LinuxDetector provides GPU detection for Linux systems.
 type LinuxDetector struct {
 	logger logger.Logger
 }
 
+// NewLinuxDetector creates a new LinuxDetector instance.
 func NewLinuxDetector(logger logger.Logger) Detector {
 	return &LinuxDetector{logger: logger}
 }
 
+// GetGPUInfo retrieves GPU information on Linux systems.
 func (d *LinuxDetector) GetGPUInfo() (entities.GPU, *errors.AppError) {
 	cmd := exec.Command("lspci", "-v")
 	output, err := cmd.Output()
@@ -54,12 +57,12 @@ func (d *LinuxDetector) GetGPUInfo() (entities.GPU, *errors.AppError) {
 func (d *LinuxDetector) getLinuxGPUMemory(model string) string {
 	if strings.Contains(strings.ToLower(model), "amd") {
 		if cmd := exec.Command("rocm-smi", "--showmeminfo"); cmd != nil {
-			if output, err := cmd.Output(); err == nil {
+			output, err := cmd.Output()
+			if err == nil {
 				return d.parseAMDMemoryOutput(string(output))
-			} else {
-				appErr := errors.ServiceError(err.Error(), map[string]interface{}{"cmd": "rocm-smi --showmeminfo"})
-				d.logger.LogError(context.Background(), "Failed to execute rocm-smi", appErr)
 			}
+			appErr := errors.ServiceError(err.Error(), map[string]interface{}{"cmd": "rocm-smi --showmeminfo"})
+			d.logger.LogError(context.Background(), "Failed to execute rocm-smi", appErr)
 		}
 	}
 

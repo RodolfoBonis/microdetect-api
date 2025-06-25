@@ -5,6 +5,7 @@ import (
 	"github.com/RodolfoBonis/microdetect-api/features/system/domain/entities"
 )
 
+// Detector provides GPU detection capabilities.
 type Detector interface {
 	GetGPUInfo() (entities.GPU, *errors.AppError)
 }

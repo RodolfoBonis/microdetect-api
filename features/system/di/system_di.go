@@ -9,6 +9,7 @@ import (
 	"go.uber.org/fx"
 )
 
+// SystemModule provides the fx module for system dependencies.
 var SystemModule = fx.Module("system",
 	fx.Provide(
 		func(logger logger.Logger, cfg *config.AppConfig) usecases.SystemUseCase {

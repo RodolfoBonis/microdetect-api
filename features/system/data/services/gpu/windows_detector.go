@@ -13,14 +13,17 @@ import (
 	"github.com/RodolfoBonis/microdetect-api/features/system/domain/entities"
 )
 
+// WindowsDetector provides GPU detection for Windows systems.
 type WindowsDetector struct {
 	logger logger.Logger
 }
 
+// NewWindowsDetector creates a new WindowsDetector instance.
 func NewWindowsDetector(logger logger.Logger) Detector {
 	return &WindowsDetector{logger: logger}
 }
 
+// GetGPUInfo retrieves GPU information on Windows systems.
 func (d *WindowsDetector) GetGPUInfo() (entities.GPU, *errors.AppError) {
 	cmd := exec.Command("wmic", "path", "win32_VideoController", "get", "name,AdapterRAM", "/format:csv")
 	output, err := cmd.Output()

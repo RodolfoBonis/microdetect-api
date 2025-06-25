@@ -34,7 +34,8 @@ func GetSystemStatusHandler(systemUc usecases.SystemUseCase) gin.HandlerFunc {
 	}
 }
 
-func SystemRoutes(route *gin.RouterGroup, systemUc usecases.SystemUseCase) {
+// Routes registers system-related routes for the application.
+func Routes(route *gin.RouterGroup, systemUc usecases.SystemUseCase) {
 	systemRoute := route.Group("/system")
 	systemRoute.GET("", GetSystemStatusHandler(systemUc))
 }

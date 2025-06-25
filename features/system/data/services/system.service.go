@@ -16,6 +16,7 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
+// SystemService provides system-related services.
 type SystemService interface {
 	GetCPUInfo() (entities.CPU, *errors.AppError)
 	GetMemoryInfo() (entities.Memory, *errors.AppError)
@@ -29,6 +30,7 @@ type systemService struct {
 	gpuService gpu.Service
 }
 
+// NewSystemService creates a new SystemService instance.
 func NewSystemService(gpuService gpu.Service) SystemService {
 	return &systemService{
 		gpuService: gpuService,
