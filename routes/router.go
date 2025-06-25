@@ -1,12 +1,13 @@
 package routes
 
 import (
+	"github.com/RodolfoBonis/microdetect-api/core/health"
+	"github.com/RodolfoBonis/microdetect-api/features/auth"
+	"github.com/RodolfoBonis/microdetect-api/features/system"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/RodolfoBonis/microdetect-api/core/health"
-	"github.com/RodolfoBonis/microdetect-api/features/auth"
 )
 
 func InitializeRoutes(router *gin.Engine) {
@@ -18,4 +19,5 @@ func InitializeRoutes(router *gin.Engine) {
 
 	health.InjectRoute(root)
 	auth.InjectRoutes(root)
+	system.InjectRoutes(root)
 }
