@@ -9,9 +9,5 @@ func InjectRoutes(route *gin.RouterGroup) {
 	var systemUc = di.SystemInjection()
 
 	systemRoute := route.Group("/system")
-	systemRoute.GET("/storage", systemUc.GetStorage)
-	systemRoute.GET("/memory", systemUc.GetMemory)
-	systemRoute.GET("/status", systemUc.GetSystemStatus)
-	systemRoute.GET("/cpu", systemUc.GetCPU)
-
+	systemRoute.GET("/", systemUc.GetSystemStatus)
 }
