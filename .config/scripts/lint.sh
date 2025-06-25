@@ -2,8 +2,6 @@
 # Script para rodar ferramentas de lint e análise estática no projeto Go
 # Agora coleta todos os erros e só falha no final, mostrando um resumo
 
-set -e
-
 FAIL=0
 
 # 1. gofmt (formatação)
