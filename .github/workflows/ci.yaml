@@ -1,0 +1,145 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'version.txt'
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+  checks: read
+  discussions: write
+  repository-projects: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  check_vulnerabilities:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
+
+      - name: Set up Git
+        run: |
+          git config --global url."https://${{ secrets.GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Define Private Dependencies
+        run: |
+          export GOPRIVATE=github.com/RodolfoBonis/go_key_guardian
+
+      - name: Install Python dependencies
+        run: pip install -r .config/scripts/requirements.txt
+
+      - name: Verify Dependencies Vulnerabilities
+        id: govulncheck
+        uses: golang/govulncheck-action@v1
+        continue-on-error: true
+        with:
+          output-format: text
+          output-file: vulnerabilities.txt
+
+      - name: Run vulnerability report script
+        if: ${{ steps.govulncheck.outcome == 'failure' && github.event_name == 'pull_request' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          REPO_NAME: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python .config/scripts/generate_vulnerability_report.py
+
+      - name: Create or update a file to ensure changes
+        if: ${{ steps.govulncheck.outcome == 'failure' && github.ref == 'refs/heads/main' }}
+        run: echo "Vulnerabilities found on $(date)" > vulnerabilities.txt
+
+      - name: Create branch and PR if vulnerabilities are found on main
+        if: ${{ steps.govulncheck.outcome == 'failure' && github.ref == 'refs/heads/main' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          
+          BRANCH_NAME="fix-vulnerabilities-$(date +%Y%m%d%H%M%S)"
+          git checkout -b $BRANCH_NAME
+          git add .
+          git commit -m "fix: address vulnerabilities"
+          git push origin $BRANCH_NAME
+          gh pr create --title "Fix vulnerabilities" --body "This PR addresses the vulnerabilities found in the main branch." --base main --head $BRANCH_NAME
+          pr_url=$(gh pr view --json url --jq '.url')
+          echo "PR_URL=$pr_url" >> $GITHUB_ENV
+
+      - name: Fail CI if vulnerabilities are found
+        if: ${{ steps.govulncheck.outcome == 'failure' }}
+        run: exit 1
+
+  notify:
+    needs: [check_vulnerabilities]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send Success Message via Telegram
+        if: ${{ needs.check_vulnerabilities.result == 'success' }}
+        uses: akeylimepie/telegram-action@main
+        with:
+          token: ${{ secrets.BOTTOKEN }}
+          chat_id: ${{ secrets.CHAT_ID }}
+          parse_mode: 'markdown'
+          message_thread_id: ${{ secrets.THREAD_ID }}
+          text: |
+            🚀 *CI Successful!*
+
+            *Details:*
+            • Repository: ${{ github.repository }}
+            • Triggered by: ${{ github.actor }}
+            • Commit: ${{ github.sha }}
+            • Branch: ${{ github.ref_name }}
+
+            ✅ CI Status: Success
+
+      - name: Send Error Message via Telegram
+        if: ${{ needs.check_vulnerabilities.result != 'success' }}
+        uses: akeylimepie/telegram-action@main
+        with:
+          token: ${{ secrets.BOTTOKEN }}
+          chat_id: ${{ secrets.CHAT_ID }}
+          parse_mode: 'markdown'
+          message_thread_id: ${{ secrets.THREAD_ID }}
+          text: |
+            ❌ *CI Failed!*
+
+            *Error Details:*
+            • Repository: ${{ github.repository }}
+            • Triggered by: ${{ github.actor }}
+            • Commit: ${{ github.sha }}
+            • Branch: ${{ github.ref_name }}
+
+            🔍 *Debug Information:*
+            • CI Status: Failure
+            • Commit URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+            • PR URL: ${{ env.PR_URL }}
+
+            ⚠️ [Check GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})

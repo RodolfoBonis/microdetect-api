@@ -1,0 +1,21 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: microdetect-api
+  description: API for YOLO training management
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: RodolfoBonis/microdetect-api
+    github.com/owner: RodolfoBonis
+    github.com/repo: microdetect-api
+  tags:
+    - go
+    - backstage-created
+    - backstage:techdocs
+    - microdetect-api
+spec:
+  type: service
+  owner: default/rbtech
+  lifecycle: production
+  definition:
+      : http://microdetect-api.rodolfodebonis.com.br/v1/docs/doc.json
