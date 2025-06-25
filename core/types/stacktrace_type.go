@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// StackTrace represents a stack trace for error handling.
 type StackTrace []uintptr
 
 func (s *StackTrace) String() string {

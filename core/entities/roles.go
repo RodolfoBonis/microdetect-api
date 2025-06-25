@@ -1,5 +1,6 @@
 package entities
 
+// Roles represents the user roles in the system.
 type Roles struct {
 	Search string
 	Insert string

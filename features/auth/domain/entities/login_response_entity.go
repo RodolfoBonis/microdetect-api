@@ -1,5 +1,9 @@
 package entities
 
+// LoginResponseEntity represents the login response payload.
+// @Description Login response data
+// @Example {"accessToken": "jwt-token", "refreshToken": "refresh-token", "expiresIn": 3600}
+
 // LoginResponseEntity model info
 // @description LoginResponseEntity model data
 type LoginResponseEntity struct {

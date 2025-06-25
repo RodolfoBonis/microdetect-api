@@ -1,10 +1,11 @@
 package entities
 
 import (
-	"github.com/google/uuid"
 	"github.com/RodolfoBonis/microdetect-api/core/types"
+	"github.com/google/uuid"
 )
 
+// JWTClaim represents the claims for JWT authentication.
 type JWTClaim struct {
 	ID             uuid.UUID              `json:"sub"`
 	Verified       bool                   `json:"email_verified"`

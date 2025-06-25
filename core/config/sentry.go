@@ -2,10 +2,12 @@ package config
 
 import (
 	"fmt"
-	"github.com/getsentry/sentry-go"
 	"os"
+
+	"github.com/getsentry/sentry-go"
 )
 
+// SentryConfig returns the Sentry configuration for the application.
 func SentryConfig() {
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:              EnvSentryDSN(),

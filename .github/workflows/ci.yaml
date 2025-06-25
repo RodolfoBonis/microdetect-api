@@ -21,6 +21,54 @@ permissions:
   pull-requests: write
 
 jobs:
+  lint_go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Instalar dependências de lint
+        run: |
+          go install golang.org/x/lint/golint@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install golang.org/x/tools/cmd/goimports@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+
+      - name: Rodar lint.sh e salvar saída
+        id: lint
+        run: |
+          chmod +x .config/scripts/lint.sh
+          export PATH=$PATH:$(go env GOPATH)/bin
+          set +e
+          ./.config/scripts/lint.sh > lint_output.txt 2>&1
+          echo "status=$?" >> $GITHUB_OUTPUT
+          set -e
+
+      - name: Instalar dependências Python para comentário
+        if: ${{ github.event_name == 'pull_request' && steps.lint.outputs.status != '0' }}
+        run: pip install openai PyGithub
+
+      - name: Comentar problemas de lint no PR
+        if: ${{ github.event_name == 'pull_request' && steps.lint.outputs.status != '0' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO_NAME: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python .config/scripts/generate_lint_report.py
+
+      - name: Falhar o job se houver problemas de lint
+        if: ${{ steps.lint.outputs.status != '0' }}
+        run: exit 1
+
   check_vulnerabilities:
     runs-on: ${{ matrix.os }}
 
@@ -32,7 +80,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ github.token }}
           fetch-depth: 0
 
       - name: Set up Go
@@ -45,7 +93,7 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --global url."https://${{ secrets.GH_TOKEN }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://${{ github.token }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Define Private Dependencies
         run: |
@@ -66,80 +114,102 @@ jobs:
         if: ${{ steps.govulncheck.outcome == 'failure' && github.event_name == 'pull_request' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           REPO_NAME: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: python .config/scripts/generate_vulnerability_report.py
 
-      - name: Create or update a file to ensure changes
-        if: ${{ steps.govulncheck.outcome == 'failure' && github.ref == 'refs/heads/main' }}
-        run: echo "Vulnerabilities found on $(date)" > vulnerabilities.txt
+      - name: Create trigger file to force PR (if needed)
+        if: ${{ steps.govulncheck.outcome == 'failure' }}
+        run: |
+          echo "trigger" > .vuln_trigger
 
-      - name: Create branch and PR if vulnerabilities are found on main
-        if: ${{ steps.govulncheck.outcome == 'failure' && github.ref == 'refs/heads/main' }}
+      - name: Create branch and PR if vulnerabilities are found
+        if: ${{ steps.govulncheck.outcome == 'failure' }}
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-          
           BRANCH_NAME="fix-vulnerabilities-$(date +%Y%m%d%H%M%S)"
           git checkout -b $BRANCH_NAME
-          git add .
-          git commit -m "fix: address vulnerabilities"
+          git add .vuln_trigger
+          git commit -m "chore: trigger PR to update dependencies due to vulnerabilities"
           git push origin $BRANCH_NAME
-          gh pr create --title "Fix vulnerabilities" --body "This PR addresses the vulnerabilities found in the main branch." --base main --head $BRANCH_NAME
+          # Detect target branch (main ou branch atual)
+          TARGET_BRANCH=$(echo "${GITHUB_REF#refs/heads/}")
+          gh pr create --title "Fix vulnerabilities" --body "Este PR foi aberto automaticamente para que as dependências possam ser atualizadas devido a vulnerabilidades detectadas pelo govulncheck.\n\n**Atenção:** As vulnerabilidades não são expostas neste PR. Analise e atualize as dependências conforme necessário." --base "$TARGET_BRANCH" --head "$BRANCH_NAME"
           pr_url=$(gh pr view --json url --jq '.url')
           echo "PR_URL=$pr_url" >> $GITHUB_ENV
+
+      - name: Remove trigger file
+        if: ${{ steps.govulncheck.outcome == 'failure' }}
+        run: rm -f .vuln_trigger
 
       - name: Fail CI if vulnerabilities are found
         if: ${{ steps.govulncheck.outcome == 'failure' }}
         run: exit 1
 
   notify:
-    needs: [check_vulnerabilities]
+    needs: [lint_go, check_vulnerabilities]
     runs-on: ubuntu-latest
     if: always()
     steps:
+      - name: Gerar mensagem de sucesso tratada
+        if: ${{ needs.lint_go.result == 'success' && needs.check_vulnerabilities.result == 'success' }}
+        id: gerar_mensagem_sucesso
+        run: |
+          echo '🚀 *CI Successful!*' > telegram_message_success.txt
+          echo '*Details:*' >> telegram_message_success.txt
+          echo '- Repository: ${{ github.repository }}' >> telegram_message_success.txt
+          echo '- Triggered by: ${{ github.actor }}' >> telegram_message_success.txt
+          echo '- Commit: ${{ github.sha }}' >> telegram_message_success.txt
+          echo '- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} -> {1}', github.head_ref, github.base_ref) || github.ref_name }}' >> telegram_message_success.txt
+          echo '- PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}' >> telegram_message_success.txt
+          echo '✅ CI Status: Success' >> telegram_message_success.txt
+          # Escapa todos os caracteres especiais do MarkdownV2
+          sed -i -E 's/_/\\_/g; s/\*/\\*/g; s/\[/\\[/g; s/\]/\\]/g; s/\(/\\(/g; s/\)/\\)/g; s/~/\\~/g; s/`/\\`/g; s/>/\\>/g; s/#/\\#/g; s/\+/\\+/g; s/=/\\=/g; s/\|/\\|/g; s/\{/\\{/g; s/\}/\\}/g; s/\./\\./g; s/!/\\!/g; s/-/\\-/g' telegram_message_success.txt
+          echo 'mensagem<<EOF' >> $GITHUB_OUTPUT
+          cat telegram_message_success.txt >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
       - name: Send Success Message via Telegram
-        if: ${{ needs.check_vulnerabilities.result == 'success' }}
-        uses: akeylimepie/telegram-action@main
+        if: ${{ needs.lint_go.result == 'success' && needs.check_vulnerabilities.result == 'success' }}
+        uses: an3park/telegram-action@v1
         with:
-          token: ${{ secrets.BOTTOKEN }}
+          bot_token: ${{ secrets.BOTTOKEN }}
           chat_id: ${{ secrets.CHAT_ID }}
-          parse_mode: 'markdown'
           message_thread_id: ${{ secrets.THREAD_ID }}
-          text: |
-            🚀 *CI Successful!*
+          parse_mode: 'MarkdownV2'
+          message: ${{ steps.gerar_mensagem_sucesso.outputs.mensagem }}
 
-            *Details:*
-            • Repository: ${{ github.repository }}
-            • Triggered by: ${{ github.actor }}
-            • Commit: ${{ github.sha }}
-            • Branch: ${{ github.ref_name }}
-
-            ✅ CI Status: Success
+      - name: Gerar mensagem de erro tratada
+        if: ${{ needs.lint_go.result != 'success' || needs.check_vulnerabilities.result != 'success' }}
+        id: gerar_mensagem_erro
+        run: |
+          echo '❌ *CI Failed!*' > telegram_message_error.txt
+          echo '*Error Details:*' >> telegram_message_error.txt
+          echo '- Repository: ${{ github.repository }}' >> telegram_message_error.txt
+          echo '- Triggered by: ${{ github.actor }}' >> telegram_message_error.txt
+          echo '- Commit: ${{ github.sha }}' >> telegram_message_error.txt
+          echo '- Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} -> {1}', github.head_ref, github.base_ref) || github.ref_name }}' >> telegram_message_error.txt
+          echo '- PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}' >> telegram_message_error.txt
+          echo '🔍 *Debug Information:*' >> telegram_message_error.txt
+          echo '- CI Status: Failure' >> telegram_message_error.txt
+          echo '- Commit URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}' >> telegram_message_error.txt
+          echo '⚠️ [Check GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})' >> telegram_message_error.txt
+          # Escapa todos os caracteres especiais do MarkdownV2
+          sed -i -E 's/_/\\_/g; s/\*/\\*/g; s/\[/\\[/g; s/\]/\\]/g; s/\(/\\(/g; s/\)/\\)/g; s/~/\\~/g; s/`/\\`/g; s/>/\\>/g; s/#/\\#/g; s/\+/\\+/g; s/=/\\=/g; s/\|/\\|/g; s/\{/\\{/g; s/\}/\\}/g; s/\./\\./g; s/!/\\!/g; s/-/\\-/g' telegram_message_error.txt
+          echo 'mensagem<<EOF' >> $GITHUB_OUTPUT
+          cat telegram_message_error.txt >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
 
       - name: Send Error Message via Telegram
-        if: ${{ needs.check_vulnerabilities.result != 'success' }}
-        uses: akeylimepie/telegram-action@main
+        if: ${{ needs.lint_go.result != 'success' || needs.check_vulnerabilities.result != 'success' }}
+        uses: an3park/telegram-action@v1
         with:
-          token: ${{ secrets.BOTTOKEN }}
+          bot_token: ${{ secrets.BOTTOKEN }}
           chat_id: ${{ secrets.CHAT_ID }}
-          parse_mode: 'markdown'
           message_thread_id: ${{ secrets.THREAD_ID }}
-          text: |
-            ❌ *CI Failed!*
-
-            *Error Details:*
-            • Repository: ${{ github.repository }}
-            • Triggered by: ${{ github.actor }}
-            • Commit: ${{ github.sha }}
-            • Branch: ${{ github.ref_name }}
-
-            🔍 *Debug Information:*
-            • CI Status: Failure
-            • Commit URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
-            • PR URL: ${{ env.PR_URL }}
-
-            ⚠️ [Check GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          parse_mode: 'MarkdownV2'
+          message: ${{ steps.gerar_mensagem_erro.outputs.mensagem }}

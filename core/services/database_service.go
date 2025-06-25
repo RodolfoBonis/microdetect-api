@@ -1,18 +1,27 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"time"
+
 	"github.com/RodolfoBonis/microdetect-api/core/config"
 	"github.com/RodolfoBonis/microdetect-api/core/entities"
 	"github.com/RodolfoBonis/microdetect-api/core/errors"
-	"time"
+	"github.com/RodolfoBonis/microdetect-api/core/logger"
 
 	"github.com/jinzhu/gorm"
+	// O import em branco abaixo é necessário para registrar o driver do banco de dados Postgres com o GORM.
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+
+	// The blank import is required to register the database driver.
+	_ "github.com/lib/pq"
 )
 
+// Connector is the global database connector instance.
 var Connector *gorm.DB
 
+// ConnectorConfig holds the configuration for the database connector.
 type ConnectorConfig struct {
 	Host     string
 	Port     string
@@ -43,7 +52,8 @@ func connectorURL(connectorConfig *ConnectorConfig) string {
 	)
 }
 
-func OpenConnection() *errors.AppError {
+// OpenConnection opens a new database connection.
+func OpenConnection(logger logger.Logger) *errors.AppError {
 	dbConfig := connectorURL(buildConnectorConfig())
 
 	db, err := gorm.Open("postgres",
@@ -51,10 +61,27 @@ func OpenConnection() *errors.AppError {
 	)
 
 	if err != nil {
-		return errors.DatabaseError(err.Error())
+		appErr := errors.NewAppError(entities.ErrDatabase, err.Error(), map[string]interface{}{"db_config": dbConfig}, err)
+		logger.LogError(context.Background(), "Failed to connect to database", appErr)
+		return appErr
 	}
 
 	environment := config.EnvironmentConfig()
+	isDevelopment := environment == entities.Environment.Development
+
+	if isDevelopment {
+		logger.Info(context.Background(), "Database connection established", map[string]interface{}{
+			"db_config": dbConfig,
+		})
+	} else {
+		cfg := buildConnectorConfig()
+		logger.Info(context.Background(), "Database connection established", map[string]interface{}{
+			"host":   cfg.Host,
+			"port":   cfg.Port,
+			"dbname": cfg.DBName,
+			"user":   cfg.User,
+		})
+	}
 
 	isProduction := environment == entities.Environment.Production
 	db.SingularTable(true)
@@ -68,18 +95,24 @@ func OpenConnection() *errors.AppError {
 		for {
 			time.Sleep(60 * time.Second)
 			if e := Connector.DB().Ping(); e != nil {
+				appErr := errors.NewAppError(entities.ErrDatabase, e.Error(), nil, e)
+				logger.LogError(context.Background(), "Database ping failed", appErr)
 			L:
 				for i := 0; i < len(intervals); i++ {
 					e2 := RetryHandler(3, func() (bool, error) {
 						var e error
 						Connector, e = gorm.Open("postgres", dbConfig)
 						if e != nil {
+							appErr := errors.NewAppError(entities.ErrDatabase, e.Error(), nil, e)
+							logger.LogError(context.Background(), "Database retry failed", appErr)
 							return false, e
 						}
+						logger.Info(context.Background(), "Database reconnected successfully")
 						return true, nil
 					})
 					if e2 != nil {
-						fmt.Println(e.Error())
+						appErr := errors.NewAppError(entities.ErrDatabase, e2.Error(), nil, e2)
+						logger.LogError(context.Background(), "Database retry failed, will retry again", appErr)
 						time.Sleep(intervals[i])
 						if i == len(intervals)-1 {
 							i--
@@ -88,7 +121,6 @@ func OpenConnection() *errors.AppError {
 					}
 					break L
 				}
-
 			}
 		}
 	}(dbConfig)
@@ -96,6 +128,7 @@ func OpenConnection() *errors.AppError {
 	return nil
 }
 
+// RetryHandler handles retry logic for database operations.
 func RetryHandler(n int, f func() (bool, error)) error {
 	ok, er := f()
 	if ok && er == nil {
@@ -107,6 +140,7 @@ func RetryHandler(n int, f func() (bool, error)) error {
 	return er
 }
 
+// RunMigrations runs the database migrations.
 func RunMigrations() {
 	/*
 		Define the Migrations here
