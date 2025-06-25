@@ -1,4 +1,24 @@
 definitions:
+  entities.CPU:
+    properties:
+      cores:
+        type: integer
+      model:
+        type: string
+      threads:
+        type: integer
+      usage:
+        type: string
+    type: object
+  entities.GPU:
+    properties:
+      available:
+        type: boolean
+      memory:
+        type: string
+      model:
+        type: string
+    type: object
   entities.LoginResponseEntity:
     description: LoginResponseEntity model data
     properties:
@@ -12,6 +32,17 @@ definitions:
         description: Token to refresh Access Token
         type: string
     type: object
+  entities.Memory:
+    properties:
+      available:
+        type: string
+      percentage:
+        type: string
+      total:
+        type: string
+      used:
+        type: string
+    type: object
   entities.RequestLoginEntity:
     description: RequestLoginEntity model data
     properties:
@@ -22,27 +53,58 @@ definitions:
         description: User password
         type: string
     type: object
-  utils.HttpError:
+  entities.Server:
+    properties:
+      active:
+        type: boolean
+      version:
+        type: string
+    type: object
+  entities.Storage:
+    properties:
+      percentage:
+        type: string
+      total:
+        type: string
+      used:
+        type: string
+    type: object
+  entities.SystemStatus:
+    properties:
+      cpu:
+        $ref: '#/definitions/entities.CPU'
+      gpu:
+        $ref: '#/definitions/entities.GPU'
+      memory:
+        $ref: '#/definitions/entities.Memory'
+      os:
+        type: string
+      server:
+        $ref: '#/definitions/entities.Server'
+      storage:
+        $ref: '#/definitions/entities.Storage'
+    type: object
+  errors.HttpError:
     properties:
       code:
         type: integer
-      error:
-        type: string
       message:
+        type: string
+      stack_trace:
         type: string
     type: object
 info:
   contact: {}
 paths:
-  /auth:
+  /auth/login:
     post:
       consumes:
       - application/json
-      description: performs auth of user
+      description: Authenticate user and return JWT tokens
       parameters:
-      - description: Login Data
+      - description: Login credentials
         in: body
-        name: _
+        name: request
         required: true
         schema:
           $ref: '#/definitions/entities.RequestLoginEntity'
@@ -50,30 +112,153 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Successful login
           schema:
             $ref: '#/definitions/entities.LoginResponseEntity'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/utils.HttpError'
-      summary: Validate auth
+            $ref: '#/definitions/errors.HttpError'
+      summary: User Login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidate the refresh token and logout the user
+      parameters:
+      - description: Bearer refresh token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+      summary: User Logout
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh the user's access and refresh tokens
+      parameters:
+      - description: Bearer refresh token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens refreshed
+          schema:
+            $ref: '#/definitions/entities.LoginResponseEntity'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+      summary: Refresh Login Access Token
+      tags:
+      - Auth
+  /auth/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validate the current access token
+      parameters:
+      - description: Bearer access token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token is valid
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.HttpError'
+      summary: Validate Auth Token
       tags:
       - Auth
   /health_check:
@@ -91,94 +276,60 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
       summary: Health Check
       tags:
       - HealthCheck
-  /logout:
-    post:
+  /system:
+    get:
       consumes:
       - application/json
-      description: Logout the User
+      description: Returns the current system status (OS, CPU, memory, GPU, storage,
+        server)
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: System status info
           schema:
-            type: boolean
+            $ref: '#/definitions/entities.SystemStatus'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/utils.HttpError'
+            $ref: '#/definitions/errors.HttpError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/utils.HttpError'
-      summary: Logout
+            $ref: '#/definitions/errors.HttpError'
+      summary: Get System Status
       tags:
-      - Auth
-  /refresh:
-    post:
-      consumes:
-      - application/json
-      description: Refresh User Token
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entities.LoginResponseEntity'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/utils.HttpError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.HttpError'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/utils.HttpError'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/utils.HttpError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/utils.HttpError'
-      summary: Refresh Login Access Token
-      tags:
-      - Auth
+      - System
 swagger: "2.0"

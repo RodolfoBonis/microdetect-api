@@ -4,9 +4,9 @@
         "contact": {}
     },
     "paths": {
-        "/auth": {
+        "/auth/login": {
             "post": {
-                "description": "performs auth of user",
+                "description": "Authenticate user and return JWT tokens",
                 "consumes": [
                     "application/json"
                 ],
@@ -16,11 +16,11 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Validate auth",
+                "summary": "User Login",
                 "parameters": [
                     {
-                        "description": "Login Data",
-                        "name": "_",
+                        "description": "Login credentials",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -30,7 +30,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Successful login",
                         "schema": {
                             "$ref": "#/definitions/entities.LoginResponseEntity"
                         }
@@ -38,31 +38,217 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "description": "Invalidate the refresh token and logout the user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "User Logout",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer refresh token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logout successful",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Refresh the user's access and refresh tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh Login Access Token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer refresh token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tokens refreshed",
+                        "schema": {
+                            "$ref": "#/definitions/entities.LoginResponseEntity"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/validate": {
+            "post": {
+                "description": "Validate the current access token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Validate Auth Token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer access token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token is valid",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     }
                 }
@@ -91,39 +277,39 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     }
                 }
             }
         },
-        "/logout": {
-            "post": {
-                "description": "Logout the User",
+        "/system": {
+            "get": {
+                "description": "Returns the current system status (OS, CPU, memory, GPU, storage, server)",
                 "consumes": [
                     "application/json"
                 ],
@@ -131,97 +317,44 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "System"
                 ],
-                "summary": "Logout",
+                "summary": "Get System Status",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "System status info",
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/definitions/entities.SystemStatus"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
-                        }
-                    }
-                }
-            }
-        },
-        "/refresh": {
-            "post": {
-                "description": "Refresh User Token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Refresh Login Access Token",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entities.LoginResponseEntity"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HttpError"
+                            "$ref": "#/definitions/errors.HttpError"
                         }
                     }
                 }
@@ -229,6 +362,37 @@
         }
     },
     "definitions": {
+        "entities.CPU": {
+            "type": "object",
+            "properties": {
+                "cores": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "threads": {
+                    "type": "integer"
+                },
+                "usage": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.GPU": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "boolean"
+                },
+                "memory": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                }
+            }
+        },
         "entities.LoginResponseEntity": {
             "description": "LoginResponseEntity model data",
             "type": "object",
@@ -247,6 +411,23 @@
                 }
             }
         },
+        "entities.Memory": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "string"
+                },
+                "percentage": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "string"
+                },
+                "used": {
+                    "type": "string"
+                }
+            }
+        },
         "entities.RequestLoginEntity": {
             "description": "RequestLoginEntity model data",
             "type": "object",
@@ -261,16 +442,64 @@
                 }
             }
         },
-        "utils.HttpError": {
+        "entities.Server": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.Storage": {
+            "type": "object",
+            "properties": {
+                "percentage": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "string"
+                },
+                "used": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.SystemStatus": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "$ref": "#/definitions/entities.CPU"
+                },
+                "gpu": {
+                    "$ref": "#/definitions/entities.GPU"
+                },
+                "memory": {
+                    "$ref": "#/definitions/entities.Memory"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "server": {
+                    "$ref": "#/definitions/entities.Server"
+                },
+                "storage": {
+                    "$ref": "#/definitions/entities.Storage"
+                }
+            }
+        },
+        "errors.HttpError": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer"
                 },
-                "error": {
+                "message": {
                     "type": "string"
                 },
-                "message": {
+                "stack_trace": {
                     "type": "string"
                 }
             }
