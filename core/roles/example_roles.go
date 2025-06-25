@@ -2,6 +2,7 @@ package roles
 
 import "github.com/RodolfoBonis/microdetect-api/core/entities"
 
+// ExampleRoles provides example user roles for the system.
 var ExampleRoles = entities.Roles{
 	Search: "search-examples",
 	Insert: "add-example",

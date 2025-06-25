@@ -11,11 +11,17 @@ import (
 	"github.com/RodolfoBonis/microdetect-api/core/logger"
 
 	"github.com/jinzhu/gorm"
+	// O import em branco abaixo é necessário para registrar o driver do banco de dados Postgres com o GORM.
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+
+	// The blank import is required to register the database driver.
+	_ "github.com/lib/pq"
 )
 
+// Connector is the global database connector instance.
 var Connector *gorm.DB
 
+// ConnectorConfig holds the configuration for the database connector.
 type ConnectorConfig struct {
 	Host     string
 	Port     string
@@ -46,6 +52,7 @@ func connectorURL(connectorConfig *ConnectorConfig) string {
 	)
 }
 
+// OpenConnection opens a new database connection.
 func OpenConnection(logger logger.Logger) *errors.AppError {
 	dbConfig := connectorURL(buildConnectorConfig())
 
@@ -121,6 +128,7 @@ func OpenConnection(logger logger.Logger) *errors.AppError {
 	return nil
 }
 
+// RetryHandler handles retry logic for database operations.
 func RetryHandler(n int, f func() (bool, error)) error {
 	ok, er := f()
 	if ok && er == nil {
@@ -132,6 +140,7 @@ func RetryHandler(n int, f func() (bool, error)) error {
 	return er
 }
 
+// RunMigrations runs the database migrations.
 func RunMigrations() {
 	/*
 		Define the Migrations here

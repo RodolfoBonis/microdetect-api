@@ -14,6 +14,7 @@ import (
 	"go.uber.org/fx"
 )
 
+// NewFxApp cria e retorna uma nova instância da aplicação Fx.
 func NewFxApp() *fx.App {
 	return fx.New(
 		logger.Module,

@@ -12,15 +12,18 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// AmqpService provides AMQP messaging capabilities.
 type AmqpService struct {
 	logger logger.Logger
 	cfg    *config.AppConfig
 }
 
+// NewAmqpService creates a new AmqpService instance.
 func NewAmqpService(logger logger.Logger, cfg *config.AppConfig) *AmqpService {
 	return &AmqpService{logger: logger, cfg: cfg}
 }
 
+// StartAmqpConnection starts the AMQP connection.
 func (s *AmqpService) StartAmqpConnection() *amqp.Connection {
 	connection, err := amqp.Dial(s.cfg.AmqpConnection)
 	if err != nil {
@@ -34,6 +37,7 @@ func (s *AmqpService) StartAmqpConnection() *amqp.Connection {
 	return connection
 }
 
+// StartChannelConnection starts the AMQP channel connection.
 func (s *AmqpService) StartChannelConnection() *amqp.Channel {
 	connection := s.StartAmqpConnection()
 	channel, err := connection.Channel()
@@ -46,6 +50,7 @@ func (s *AmqpService) StartChannelConnection() *amqp.Channel {
 	return channel
 }
 
+// SendDataToQueue sends data to the AMQP queue.
 func (s *AmqpService) SendDataToQueue(queue string, payload []byte) {
 	channel := s.StartChannelConnection()
 
@@ -86,6 +91,7 @@ func (s *AmqpService) SendDataToQueue(queue string, payload []byte) {
 	})
 }
 
+// ConsumeQueue consumes messages from the AMQP queue.
 func (s *AmqpService) ConsumeQueue(queue string) <-chan amqp.Delivery {
 	channel := s.StartChannelConnection()
 

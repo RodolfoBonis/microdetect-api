@@ -1,7 +1,7 @@
 package errors
 
-// HttpError is a HTTP-friendly error with status, message, stacktrace and context.
-type HttpError struct {
+// HTTPError represents an HTTP error.
+type HTTPError struct {
 	StatusCode int                    `json:"code"`
 	Message    string                 `json:"message"`
 	StackTrace string                 `json:"stack_trace,omitempty"`
@@ -10,8 +10,8 @@ type HttpError struct {
 }
 
 // NewHTTPError creates a new HttpError with status, message and optional stack/context.
-func NewHTTPError(statusCode int, message string, stack ...string) *HttpError {
-	h := &HttpError{
+func NewHTTPError(statusCode int, message string, stack ...string) *HTTPError {
+	h := &HTTPError{
 		StatusCode: statusCode,
 		Message:    message,
 	}
@@ -22,8 +22,8 @@ func NewHTTPError(statusCode int, message string, stack ...string) *HttpError {
 }
 
 // FromAppError creates a HttpError from an AppError.
-func FromAppError(err *AppError) *HttpError {
-	return &HttpError{
+func FromAppError(err *AppError) *HTTPError {
+	return &HTTPError{
 		StatusCode: err.HTTPStatus(),
 		Message:    err.Message,
 		Context:    err.Fields,
@@ -32,7 +32,7 @@ func FromAppError(err *AppError) *HttpError {
 }
 
 // ToMap returns a map for structured logging.
-func (e *HttpError) ToMap() map[string]interface{} {
+func (e *HTTPError) ToMap() map[string]interface{} {
 	fields := map[string]interface{}{
 		"code":    e.StatusCode,
 		"message": e.Message,

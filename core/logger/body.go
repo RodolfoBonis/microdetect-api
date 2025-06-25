@@ -33,6 +33,7 @@ func maskSensitiveFields(body string) string {
 	return body
 }
 
+// HandleRequestBody processes the request body for logging.
 func HandleRequestBody(req *http.Request) string {
 	if !isDevelopment() {
 		return ""
@@ -50,11 +51,13 @@ func HandleRequestBody(req *http.Request) string {
 	return maskSensitiveFields(string(requestBodyBytes))
 }
 
+// HandleResponseBody processes the response body for logging.
 func HandleResponseBody(rw gin.ResponseWriter) *BodyLogWriter {
 	return &BodyLogWriter{Body: bytes.NewBufferString(""), ResponseWriter: rw}
 }
 
-func FormatRequestAndResponse(rw gin.ResponseWriter, req *http.Request, responseBody string, requestId string, requestBody string) string {
+// FormatRequestAndResponse formats the request and response for logging.
+func FormatRequestAndResponse(rw gin.ResponseWriter, req *http.Request, responseBody string, requestID string, requestBody string) string {
 	if req.URL.String() == "/metrics" || strings.Contains(req.URL.String(), "/docs") {
 		return ""
 	}
@@ -70,5 +73,5 @@ func FormatRequestAndResponse(rw gin.ResponseWriter, req *http.Request, response
 	requestBody = maskSensitiveFields(requestBody)
 	responseBody = maskSensitiveFields(responseBody)
 	return fmt.Sprintf("[Request ID: %s], Status: [%d], Method: [%s], Url: %s Request Body: %s, Response Body: %s",
-		requestId, rw.Status(), req.Method, req.URL.String(), requestBody, responseBody)
+		requestID, rw.Status(), req.Method, req.URL.String(), requestBody, responseBody)
 }

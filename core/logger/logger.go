@@ -65,24 +65,37 @@ func NewLogger() Logger {
 	return &CustomLogger{logger: zapLogger}
 }
 
+// Debug logs a debug message.
 func (cl *CustomLogger) Debug(ctx context.Context, message string, fields ...Fields) {
 	cl.logger.Debug(message, cl.zapFields(ctx, fields...)...)
 }
+
+// Info logs an info message.
 func (cl *CustomLogger) Info(ctx context.Context, message string, fields ...Fields) {
 	cl.logger.Info(message, cl.zapFields(ctx, fields...)...)
 }
+
+// Warning logs a warning message.
 func (cl *CustomLogger) Warning(ctx context.Context, message string, fields ...Fields) {
 	cl.logger.Warn(message, cl.zapFields(ctx, fields...)...)
 }
+
+// Error logs an error message.
 func (cl *CustomLogger) Error(ctx context.Context, message string, fields ...Fields) {
 	cl.logger.Error(message, cl.zapFields(ctx, fields...)...)
 }
+
+// Fatal logs a fatal message.
 func (cl *CustomLogger) Fatal(ctx context.Context, message string, fields ...Fields) {
 	cl.logger.Fatal(message, cl.zapFields(ctx, fields...)...)
 }
+
+// Panic logs a panic message.
 func (cl *CustomLogger) Panic(ctx context.Context, message string, fields ...Fields) {
 	cl.logger.Panic(message, cl.zapFields(ctx, fields...)...)
 }
+
+// With returns a logger with additional fields.
 func (cl *CustomLogger) With(fields Fields) Logger {
 	return &CustomLogger{logger: cl.logger.With(cl.fieldsToZap(fields)...)}
 }
@@ -115,6 +128,7 @@ func (cl *CustomLogger) fieldsToZap(fields Fields) []zap.Field {
 	return zfs
 }
 
+// Module provides the fx module for CustomLogger.
 var Module = fx.Module("logger", fx.Provide(NewLogger))
 
 // LogError logs any error in a structured way, extracting stacktrace/context if available.

@@ -5,10 +5,12 @@ import (
 	"go.uber.org/fx"
 )
 
+// AppConfig holds the application configuration.
 type AppConfig struct {
-	Port           string
-	Keycloak       entities.KeyCloakDataEntity
-	ServiceId      string
+	Port     string
+	Keycloak entities.KeyCloakDataEntity
+	// ServiceID is the unique identifier for the service.
+	ServiceID      string
 	SentryDSN      string
 	DBHost         string
 	DBPort         string
@@ -20,11 +22,12 @@ type AppConfig struct {
 	AmqpConnection string
 }
 
+// NewAppConfig creates and returns a new AppConfig instance.
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
 		Port:           EnvPort(),
 		Keycloak:       EnvKeyCloak(),
-		ServiceId:      EnvServiceId(),
+		ServiceID:      EnvServiceID(),
 		SentryDSN:      EnvSentryDSN(),
 		DBHost:         EnvDBHost(),
 		DBPort:         EnvDBPort(),
@@ -37,4 +40,5 @@ func NewAppConfig() *AppConfig {
 	}
 }
 
+// Module provides the fx module for AppConfig.
 var Module = fx.Module("config", fx.Provide(NewAppConfig))

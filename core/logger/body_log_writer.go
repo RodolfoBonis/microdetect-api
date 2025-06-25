@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// BodyLogWriter is a custom writer for logging HTTP body content.
 type BodyLogWriter struct {
 	gin.ResponseWriter
 	Body *bytes.Buffer

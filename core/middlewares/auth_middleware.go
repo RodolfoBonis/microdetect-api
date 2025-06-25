@@ -14,6 +14,7 @@ import (
 	jsonToken "github.com/golang-jwt/jwt/v4"
 )
 
+// NewProtectMiddleware creates a new authentication middleware.
 func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, role string) gin.HandlerFunc {
 	return func(handler gin.HandlerFunc, role string) gin.HandlerFunc {
 		return func(c *gin.Context) {
@@ -24,7 +25,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 
 			if len(authHeader) < 1 {
 				err := errors.NewAppError(entities.ErrInvalidToken, "Missing token", nil, nil)
-				httpError := err.ToHttpError()
+				httpError := err.ToHTTPError()
 				logger.LogError(ctx, "Auth failed: missing token", err)
 				c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 				c.Abort()
@@ -43,7 +44,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 
 			if err != nil {
 				appError := errors.NewAppError(entities.ErrMiddleware, err.Error(), nil, err)
-				httpError := appError.ToHttpError()
+				httpError := appError.ToHTTPError()
 				logger.LogError(ctx, "Auth failed: token introspection error", appError)
 				c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 				c.Abort()
@@ -54,7 +55,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 
 			if !isTokenValid {
 				err := errors.NewAppError(entities.ErrInvalidToken, "Token invalid", nil, nil)
-				httpError := err.ToHttpError()
+				httpError := err.ToHTTPError()
 				logger.LogError(ctx, "Auth failed: token invalid", err)
 				c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 				c.Abort()
@@ -69,7 +70,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 
 			if err != nil {
 				appError := errors.NewAppError(entities.ErrMiddleware, err.Error(), nil, err)
-				httpError := appError.ToHttpError()
+				httpError := appError.ToHTTPError()
 				logger.LogError(ctx, "Auth failed: decode token error", appError)
 				c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 				c.Abort()
@@ -85,7 +86,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 			err = json.Unmarshal(jsonData, &userClaim)
 			if err != nil {
 				appError := errors.NewAppError(entities.ErrMiddleware, err.Error(), nil, err)
-				httpError := appError.ToHttpError()
+				httpError := appError.ToHTTPError()
 				logger.LogError(ctx, "Auth failed: unmarshal claims error", appError)
 				c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 				c.Abort()
@@ -98,7 +99,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 			err = json.Unmarshal(rolesBytes, &userClaim.Roles)
 			if err != nil {
 				appError := errors.NewAppError(entities.ErrMiddleware, err.Error(), nil, err)
-				httpError := appError.ToHttpError()
+				httpError := appError.ToHTTPError()
 				logger.LogError(ctx, "Auth failed: unmarshal roles error", appError)
 				c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 				c.Abort()
@@ -109,7 +110,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 
 			if !containsRole {
 				appError := errors.NewAppError(entities.ErrUnauthorized, "Missing required role", nil, nil)
-				httpError := appError.ToHttpError()
+				httpError := appError.ToHTTPError()
 				logger.LogError(ctx, "Auth failed: missing required role", appError)
 				c.AbortWithStatusJSON(httpError.StatusCode, httpError)
 				c.Abort()

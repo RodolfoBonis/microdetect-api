@@ -13,6 +13,7 @@ import (
 	"go.uber.org/fx"
 )
 
+// RegisterHooks registers application lifecycle hooks.
 func RegisterHooks(lifecycle fx.Lifecycle, router *gin.Engine, logger logger.Logger, monitoring *middlewares.MonitoringMiddleware) {
 	lifecycle.Append(
 		fx.Hook{

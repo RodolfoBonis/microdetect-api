@@ -5,6 +5,7 @@ import "net/http"
 // AppErrorType representa os tipos de erro da aplicação.
 type AppErrorType int
 
+// ErrDatabase represents a database error.
 const (
 	ErrDatabase AppErrorType = iota + 1001
 	ErrRepository
@@ -21,6 +22,7 @@ const (
 	ErrUnauthorized
 )
 
+// AppErrorTypeToString maps AppErrorType to string representations.
 var AppErrorTypeToString = map[AppErrorType]string{
 	ErrDatabase:           "Database error",
 	ErrRepository:         "Repository error",
@@ -37,6 +39,7 @@ var AppErrorTypeToString = map[AppErrorType]string{
 	ErrUnauthorized:       "Unauthorized",
 }
 
+// AppErrorTypeToHTTP maps AppErrorType to HTTP status codes.
 var AppErrorTypeToHTTP = map[AppErrorType]int{
 	ErrDatabase:           http.StatusInternalServerError,
 	ErrRepository:         http.StatusInternalServerError,
