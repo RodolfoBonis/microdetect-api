@@ -11,7 +11,12 @@ PR_NUMBER = os.getenv("PR_NUMBER")
 openai.api_key = OPENAI_API_KEY
 
 with open('lint_output.txt', 'r') as file:
-    lint_output = file.read()
+    lint_output = file.read().strip()
+
+# Se não houver saída de lint, não comenta nada
+if not lint_output:
+    print("Nenhum problema de lint encontrado. Nenhum comentário será criado.")
+    exit(0)
 
 prompt = f"""
 Você é um engenheiro de software sênior revisando um pull request. O CI identificou os seguintes problemas de lint e qualidade de código Go. Para cada problema, gere um comentário técnico claro e objetivo, explicando:
