@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/RodolfoBonis/microdetect-api/core/entities"
+	"os"
+	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/RodolfoBonis/microdetect-api/core/config"
 	"github.com/RodolfoBonis/microdetect-api/core/errors"
 	"github.com/RodolfoBonis/microdetect-api/core/logger"
@@ -11,6 +13,7 @@ import (
 	"github.com/RodolfoBonis/microdetect-api/core/services"
 	"github.com/RodolfoBonis/microdetect-api/docs"
 	"github.com/RodolfoBonis/microdetect-api/routes"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
