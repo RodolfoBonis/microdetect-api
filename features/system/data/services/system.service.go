@@ -80,7 +80,7 @@ func (s *systemService) GetStorageInfo() (entities.Storage, *errors.AppError) {
 
 	var totalUsed, totalTotal uint64
 	partition := partitions[0]
-	usage, err := disk.Usage(partition.Mountpoint)
+	usage, _ := disk.Usage(partition.Mountpoint)
 
 	totalUsed += usage.Used
 	totalTotal += usage.Total

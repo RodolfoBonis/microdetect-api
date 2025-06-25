@@ -95,7 +95,7 @@ func NewProtectMiddleware(logger logger.Logger) func(handler gin.HandlerFunc, ro
 
 			keyCloakData := config.EnvKeyCloak()
 			client := userClaim.ResourceAccess[keyCloakData.ClientID].(map[string]interface{})
-			rolesBytes, err := json.Marshal(client["roles"])
+			rolesBytes, _ := json.Marshal(client["roles"])
 			err = json.Unmarshal(rolesBytes, &userClaim.Roles)
 			if err != nil {
 				appError := errors.NewAppError(entities.ErrMiddleware, err.Error(), nil, err)
