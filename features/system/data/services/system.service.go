@@ -2,7 +2,13 @@ package services
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
+	"github.com/RodolfoBonis/microdetect-api/core/config"
+	coreEntities "github.com/RodolfoBonis/microdetect-api/core/entities"
 	"github.com/RodolfoBonis/microdetect-api/core/errors"
+	"github.com/RodolfoBonis/microdetect-api/features/system/data/services/gpu"
 	"github.com/RodolfoBonis/microdetect-api/features/system/domain/entities"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -14,24 +20,30 @@ type SystemService interface {
 	GetCPUInfo() (entities.CPU, *errors.AppError)
 	GetMemoryInfo() (entities.Memory, *errors.AppError)
 	GetStorageInfo() (entities.Storage, *errors.AppError)
+	GetGPUInfo() (entities.GPU, *errors.AppError)
 	GetHostInfo() (string, *errors.AppError)
+	GetServerInfo() (entities.Server, *errors.AppError)
 }
 
-type systemService struct{}
+type systemService struct {
+	gpuService gpu.Service
+}
 
-func NewSystemService() SystemService {
-	return &systemService{}
+func NewSystemService(gpuService gpu.Service) SystemService {
+	return &systemService{
+		gpuService: gpuService,
+	}
 }
 
 func (s *systemService) GetCPUInfo() (entities.CPU, *errors.AppError) {
 	infos, err := cpu.Info()
 
 	if err != nil {
-		return entities.CPU{}, errors.ServiceError(err.Error())
+		return entities.CPU{}, errors.NewAppError(coreEntities.ErrService, err.Error(), nil, err)
 	}
 
 	if len(infos) == 0 {
-		return entities.CPU{}, errors.ServiceError("no CPU information available")
+		return entities.CPU{}, errors.NewAppError(coreEntities.ErrService, "no CPU information available", nil, nil)
 	}
 
 	cpuInfo := infos[0]
@@ -47,7 +59,7 @@ func (s *systemService) GetCPUInfo() (entities.CPU, *errors.AppError) {
 func (s *systemService) GetMemoryInfo() (entities.Memory, *errors.AppError) {
 	memInfo, err := mem.VirtualMemory()
 	if err != nil {
-		return entities.Memory{}, errors.ServiceError(err.Error())
+		return entities.Memory{}, errors.NewAppError(coreEntities.ErrService, err.Error(), nil, err)
 	}
 
 	return entities.Memory{
@@ -61,7 +73,7 @@ func (s *systemService) GetMemoryInfo() (entities.Memory, *errors.AppError) {
 func (s *systemService) GetStorageInfo() (entities.Storage, *errors.AppError) {
 	partitions, err := disk.Partitions(false)
 	if err != nil {
-		return entities.Storage{}, errors.ServiceError(err.Error())
+		return entities.Storage{}, errors.NewAppError(coreEntities.ErrService, err.Error(), nil, err)
 	}
 
 	var totalUsed, totalTotal uint64
@@ -87,7 +99,7 @@ func (s *systemService) GetHostInfo() (string, *errors.AppError) {
 	info, err := host.Info()
 
 	if err != nil {
-		return "", errors.ServiceError(err.Error())
+		return "", errors.NewAppError(coreEntities.ErrService, err.Error(), nil, err)
 	}
 
 	return fmt.Sprintf("Platform: %s %s (%s)",
@@ -95,4 +107,31 @@ func (s *systemService) GetHostInfo() (string, *errors.AppError) {
 		info.PlatformVersion,
 		info.PlatformFamily,
 	), nil
+}
+
+func (s *systemService) GetGPUInfo() (entities.GPU, *errors.AppError) {
+	gpuInfo, err := s.gpuService.GetGPUInfo()
+	if err == nil {
+		return gpuInfo, nil
+	}
+	return entities.GPU{
+		Model:     "No dedicated GPU detected",
+		Memory:    "N/A",
+		Available: false,
+	}, nil
+}
+
+func (s *systemService) GetServerInfo() (entities.Server, *errors.AppError) {
+	versionFileName := "version.txt"
+	if config.EnvironmentConfig() == coreEntities.Environment.Production {
+		versionFileName = "/version.txt"
+	}
+	version := "unknown"
+	if content, err := os.ReadFile(versionFileName); err == nil {
+		version = strings.TrimSpace(string(content))
+	}
+	return entities.Server{
+		Version: version,
+		Active:  true,
+	}, nil
 }

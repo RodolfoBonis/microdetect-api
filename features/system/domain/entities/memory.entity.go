@@ -1,5 +1,9 @@
 package entities
 
+// Memory represents memory information.
+// @Description Memory data
+// @Example {"Total": "16GB", "Available": "8GB", "Used": "8GB", "Percentage": "50%"}
+
 type Memory struct {
 	Total      string
 	Available  string
