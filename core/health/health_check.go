@@ -1,12 +1,17 @@
 package health
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/RodolfoBonis/microdetect-api/core/logger"
+	"github.com/gin-gonic/gin"
 )
 
-func InjectRoute(route *gin.RouterGroup) {
-	route.GET("/health_check", healthCheck)
+func HealthRoutes(route *gin.RouterGroup, logger logger.Logger) {
+	route.GET("/health_check", func(context *gin.Context) {
+		logger.Info(context.Request.Context(), "Health check accessed")
+		context.String(http.StatusOK, "This Service is Healthy")
+	})
 }
 
 // healthCheck godoc

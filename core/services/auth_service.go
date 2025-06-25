@@ -12,3 +12,7 @@ func InitializeOAuthServer() {
 
 	AuthClient = gocloak.NewClient(keycloakDataAccess.Host)
 }
+
+func NewAuthClient(cfg *config.AppConfig) *gocloak.GoCloak {
+	return gocloak.NewClient(cfg.Keycloak.Host)
+}

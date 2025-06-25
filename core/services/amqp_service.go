@@ -2,37 +2,52 @@ package services
 
 import (
 	"context"
-	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/RodolfoBonis/microdetect-api/core/config"
-	"github.com/RodolfoBonis/microdetect-api/core/logger"
 	"net/http"
 	"os"
+
+	"github.com/RodolfoBonis/microdetect-api/core/config"
+	"github.com/RodolfoBonis/microdetect-api/core/entities"
+	"github.com/RodolfoBonis/microdetect-api/core/errors"
+	"github.com/RodolfoBonis/microdetect-api/core/logger"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func StartAmqpConnection() *amqp.Connection {
-	connectionString := config.EnvAmqpConnection()
-	connection, err := amqp.Dial(connectionString)
+type AmqpService struct {
+	logger logger.Logger
+	cfg    *config.AppConfig
+}
+
+func NewAmqpService(logger logger.Logger, cfg *config.AppConfig) *AmqpService {
+	return &AmqpService{logger: logger, cfg: cfg}
+}
+
+func (s *AmqpService) StartAmqpConnection() *amqp.Connection {
+	connection, err := amqp.Dial(s.cfg.AmqpConnection)
 	if err != nil {
-		logger.Log.Error("Failed to connect to RabbitMQ")
+		appErr := errors.NewAppError(entities.ErrService, err.Error(), map[string]interface{}{"amqp_url": s.cfg.AmqpConnection}, err)
+		s.logger.LogError(context.Background(), "Failed to connect to RabbitMQ", appErr)
 		os.Exit(http.StatusInternalServerError)
 	}
-
+	s.logger.Info(context.Background(), "Connected to RabbitMQ", map[string]interface{}{
+		"amqp_url": s.cfg.AmqpConnection,
+	})
 	return connection
 }
 
-func StartChannelConnection() *amqp.Channel {
-	connection := StartAmqpConnection()
+func (s *AmqpService) StartChannelConnection() *amqp.Channel {
+	connection := s.StartAmqpConnection()
 	channel, err := connection.Channel()
 	if err != nil {
-		logger.Log.Error("Failed to open a channel")
+		appErr := errors.NewAppError(entities.ErrService, err.Error(), nil, err)
+		s.logger.LogError(context.Background(), "Failed to open a channel", appErr)
 		os.Exit(http.StatusInternalServerError)
 	}
-
+	s.logger.Info(context.Background(), "AMQP channel opened")
 	return channel
 }
 
-func SendDataToQueue(queue string, payload []byte) {
-	channel := StartChannelConnection()
+func (s *AmqpService) SendDataToQueue(queue string, payload []byte) {
+	channel := s.StartChannelConnection()
 
 	q, internalError := channel.QueueDeclare(
 		queue, // name
@@ -44,8 +59,8 @@ func SendDataToQueue(queue string, payload []byte) {
 	)
 
 	if internalError != nil {
-		logger.Log.Error(internalError.Error())
-
+		appErr := errors.NewAppError(entities.ErrService, internalError.Error(), map[string]interface{}{"queue": queue}, internalError)
+		s.logger.LogError(context.Background(), "Failed to declare queue", appErr)
 		os.Exit(http.StatusInternalServerError)
 	}
 
@@ -60,15 +75,19 @@ func SendDataToQueue(queue string, payload []byte) {
 		})
 
 	if internalError != nil {
-		logger.Log.Error(internalError.Error())
-
+		appErr := errors.NewAppError(entities.ErrService, internalError.Error(), map[string]interface{}{"queue": queue}, internalError)
+		s.logger.LogError(context.Background(), "Failed to publish message", appErr)
 		os.Exit(http.StatusInternalServerError)
 	}
+
+	s.logger.Info(context.Background(), "Message published to queue", map[string]interface{}{
+		"queue":        queue,
+		"payload_size": len(payload),
+	})
 }
 
-func ConsumeQueue(queue string) <-chan amqp.Delivery {
-
-	channel := StartChannelConnection()
+func (s *AmqpService) ConsumeQueue(queue string) <-chan amqp.Delivery {
+	channel := s.StartChannelConnection()
 
 	q, internalError := channel.QueueDeclare(
 		queue, // name
@@ -80,7 +99,8 @@ func ConsumeQueue(queue string) <-chan amqp.Delivery {
 	)
 
 	if internalError != nil {
-		logger.Log.Error(internalError.Error())
+		appErr := errors.NewAppError(entities.ErrService, internalError.Error(), map[string]interface{}{"queue": queue}, internalError)
+		s.logger.LogError(context.Background(), "Failed to declare queue for consume", appErr)
 		os.Exit(http.StatusInternalServerError)
 	}
 
@@ -95,9 +115,14 @@ func ConsumeQueue(queue string) <-chan amqp.Delivery {
 	)
 
 	if internalError != nil {
-		logger.Log.Error(internalError.Error())
+		appErr := errors.NewAppError(entities.ErrService, internalError.Error(), map[string]interface{}{"queue": queue}, internalError)
+		s.logger.LogError(context.Background(), "Failed to start consuming queue", appErr)
 		os.Exit(http.StatusInternalServerError)
 	}
+
+	s.logger.Info(context.Background(), "Consuming queue", map[string]interface{}{
+		"queue": queue,
+	})
 
 	return msgs
 }

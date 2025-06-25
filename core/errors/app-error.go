@@ -1,123 +1,97 @@
 package errors
 
 import (
+	"net/http"
+
 	"github.com/RodolfoBonis/microdetect-api/core/entities"
-	"github.com/RodolfoBonis/microdetect-api/core/types"
 )
 
+// Error is the base interface for all custom errors in the system.
+type Error interface {
+	error
+	Code() int
+	Message() string
+	StackTrace() string
+	Context() map[string]interface{}
+	Unwrap() error
+	ToLogFields() map[string]interface{}
+	ToHttpError() *HttpError
+}
+
+// AppError representa um erro de aplicação padronizado.
 type AppError struct {
-	Error      int              `json:"app_error"`
-	Message    string           `json:"message"`
-	StackTrace types.StackTrace `json:"stack_trace"`
+	Type    entities.AppErrorType
+	Message string
+	Fields  map[string]interface{}
+	Cause   error
 }
 
-func (e *AppError) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"error":       e.Error,
-		"message":     e.Message,
-		"stack_trace": e.StackTrace.String(),
+func (e *AppError) Error() string {
+	return e.Message
+}
+
+func (e *AppError) HTTPStatus() int {
+	if status, ok := entities.AppErrorTypeToHTTP[e.Type]; ok {
+		return status
 	}
+	return http.StatusInternalServerError
 }
 
-func (e *AppError) ToHttpError() *HttpError {
-	return NewHTTPError(entities.AppErrorToHTTPCode[e.Error], e.Message)
-}
-
-func newAppError(error int, message string) *AppError {
+// NewAppError cria um novo erro padronizado.
+func NewAppError(errType entities.AppErrorType, msg string, fields map[string]interface{}, cause error) *AppError {
+	if msg == "" {
+		msg = entities.AppErrorTypeToString[errType]
+	}
 	return &AppError{
-		Error:      error,
-		Message:    message,
-		StackTrace: callers(),
+		Type:    errType,
+		Message: msg,
+		Fields:  fields,
+		Cause:   cause,
 	}
 }
 
-func DatabaseError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Database,
-		message,
-	)
+// ToLogFields returns a map with all error details for structured logging.
+func (e *AppError) ToLogFields() map[string]interface{} {
+	fields := map[string]interface{}{
+		"error_code":    e.Type,
+		"error_message": e.Message,
+	}
+	for k, v := range e.Fields {
+		fields[k] = v
+	}
+	if e.Cause != nil {
+		fields["cause"] = e.Cause.Error()
+	}
+	return fields
 }
 
-func EntityError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Entity,
-		message,
-	)
+// ToHttpError converts the AppError to an HttpError.
+func (e *AppError) ToHttpError() *HttpError {
+	return NewHTTPError(e.HTTPStatus(), e.Message)
 }
 
-func EnvironmentError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Environment,
-		message,
-	)
+// Helpers for common errors
+func EntityError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrEntity, message, ctx[0], nil)
 }
-
-func MiddlewareError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Middleware,
-		message,
-	)
+func EnvironmentError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrEnvironment, message, ctx[0], nil)
 }
-
-func ModelError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Model,
-		message,
-	)
+func MiddlewareError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrMiddleware, message, ctx[0], nil)
 }
-
-func RepositoryError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Repository,
-		message,
-	)
+func ModelError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrModel, message, ctx[0], nil)
 }
-
-func RootError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Root,
-		message,
-	)
+func RepositoryError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrRepository, message, ctx[0], nil)
 }
-
-func ServiceError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Service,
-		message,
-	)
+func RootError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrRoot, message, ctx[0], nil)
 }
-
-func UsecaseError(message string) *AppError {
-	return newAppError(
-		entities.AppError.Usecase,
-		message,
-	)
+func ServiceError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrService, message, ctx[0], nil)
 }
-
-func NotFoundError() *AppError {
-	return newAppError(
-		entities.AppError.NotFound,
-		"Resource not found",
-	)
-}
-
-func InvalidTokenError() *AppError {
-	return newAppError(
-		entities.AppError.InvalidToken,
-		"Invalid Token",
-	)
-}
-
-func InvalidCredentialsError() *AppError {
-	return newAppError(
-		entities.AppError.InvalidCredentials,
-		"Invalid Credentials",
-	)
-}
-
-func UnauthorizedError() *AppError {
-	return newAppError(
-		entities.AppError.Unauthorized,
-		"Unauthorized",
-	)
+func UsecaseError(message string, ctx ...map[string]interface{}) *AppError {
+	return NewAppError(entities.ErrUsecase, message, ctx[0], nil)
 }
