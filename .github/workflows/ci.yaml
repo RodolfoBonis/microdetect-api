@@ -70,7 +70,6 @@ jobs:
         run: exit 1
 
   check_vulnerabilities:
-    needs: [lint_go]
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -120,26 +119,32 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: python .config/scripts/generate_vulnerability_report.py
 
-      - name: Create or update a file to ensure changes
-        if: ${{ steps.govulncheck.outcome == 'failure' && github.ref == 'refs/heads/main' }}
-        run: echo "Vulnerabilities found on $(date)" > vulnerabilities.txt
+      - name: Create trigger file to force PR (if needed)
+        if: ${{ steps.govulncheck.outcome == 'failure' }}
+        run: |
+          echo "trigger" > .vuln_trigger
 
-      - name: Create branch and PR if vulnerabilities are found on main
-        if: ${{ steps.govulncheck.outcome == 'failure' && github.ref == 'refs/heads/main' }}
+      - name: Create branch and PR if vulnerabilities are found
+        if: ${{ steps.govulncheck.outcome == 'failure' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-          
           BRANCH_NAME="fix-vulnerabilities-$(date +%Y%m%d%H%M%S)"
           git checkout -b $BRANCH_NAME
-          git add .
-          git commit -m "fix: address vulnerabilities"
+          git add .vuln_trigger
+          git commit -m "chore: trigger PR to update dependencies due to vulnerabilities"
           git push origin $BRANCH_NAME
-          gh pr create --title "Fix vulnerabilities" --body "This PR addresses the vulnerabilities found in the main branch." --base main --head $BRANCH_NAME
+          # Detect target branch (main ou branch atual)
+          TARGET_BRANCH=$(echo "${GITHUB_REF#refs/heads/}")
+          gh pr create --title "Fix vulnerabilities" --body "Este PR foi aberto automaticamente para que as dependências possam ser atualizadas devido a vulnerabilidades detectadas pelo govulncheck.\n\n**Atenção:** As vulnerabilidades não são expostas neste PR. Analise e atualize as dependências conforme necessário." --base "$TARGET_BRANCH" --head "$BRANCH_NAME"
           pr_url=$(gh pr view --json url --jq '.url')
           echo "PR_URL=$pr_url" >> $GITHUB_ENV
+
+      - name: Remove trigger file
+        if: ${{ steps.govulncheck.outcome == 'failure' }}
+        run: rm -f .vuln_trigger
 
       - name: Fail CI if vulnerabilities are found
         if: ${{ steps.govulncheck.outcome == 'failure' }}
@@ -165,7 +170,8 @@ jobs:
             • Repository: ${{ github.repository }}
             • Triggered by: ${{ github.actor }}
             • Commit: ${{ github.sha }}
-            • Branch: ${{ github.ref_name }}
+            • Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} → {1}', github.head_ref, github.base_ref) || github.ref_name }}
+            • PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
 
             ✅ CI Status: Success
 
@@ -184,11 +190,11 @@ jobs:
             • Repository: ${{ github.repository }}
             • Triggered by: ${{ github.actor }}
             • Commit: ${{ github.sha }}
-            • Branch: ${{ github.ref_name }}
+            • Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} → {1}', github.head_ref, github.base_ref) || github.ref_name }}
+            • PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
 
             🔍 *Debug Information:*
             • CI Status: Failure
             • Commit URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
-            • PR URL: ${{ env.PR_URL }}
 
             ⚠️ [Check GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
