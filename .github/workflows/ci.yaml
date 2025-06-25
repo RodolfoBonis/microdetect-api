@@ -168,7 +168,7 @@ jobs:
           echo '- PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}' >> telegram_message_success.txt
           echo '✅ CI Status: Success' >> telegram_message_success.txt
           # Escapa todos os caracteres especiais do MarkdownV2
-          sed -i -E 's/([-\_\*\[\]\(\)~`>#+=|{}\.!])/\\\1/g' telegram_message_success.txt
+          sed -i -E 's/([\-_*\[\]()~`>#+=|{}\.!])/\\\1/g' telegram_message_success.txt
           echo 'mensagem<<EOF' >> $GITHUB_OUTPUT
           cat telegram_message_success.txt >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
@@ -199,7 +199,7 @@ jobs:
           echo '- Commit URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}' >> telegram_message_error.txt
           echo '⚠️ [Check GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})' >> telegram_message_error.txt
           # Escapa todos os caracteres especiais do MarkdownV2
-          sed -i -E 's/([-\_\*\[\]\(\)~`>#+=|{}\.!])/\\\1/g' telegram_message_error.txt
+          sed -i -E 's/([\-_*\[\]()~`>#+=|{}\.!])/\\\1/g' telegram_message_error.txt
           echo 'mensagem<<EOF' >> $GITHUB_OUTPUT
           cat telegram_message_error.txt >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
