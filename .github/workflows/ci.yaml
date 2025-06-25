@@ -170,7 +170,7 @@ jobs:
             - Repository: ${{ github.repository }}
             - Triggered by: ${{ github.actor }}
             - Commit: ${{ github.sha }}
-            - Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} > {1}', github.head_ref, github.base_ref) || github.ref_name }}
+            - Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} - {1}', github.head_ref, github.base_ref) || github.ref_name }}
             - PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
 
             ✅ CI Status: Success
@@ -190,7 +190,7 @@ jobs:
             - Repository: ${{ github.repository }}
             - Triggered by: ${{ github.actor }}
             - Commit: ${{ github.sha }}
-            - Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} > {1}', github.head_ref, github.base_ref) || github.ref_name }}
+            - Branch: ${{ github.event_name == 'pull_request' && github.head_ref && github.base_ref && format('{0} - {1}', github.head_ref, github.base_ref) || github.ref_name }}
             - PR URL: ${{ github.event_name == 'pull_request' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.pull_request.number) || env.PR_URL }}
 
             🔍 *Debug Information:*
